@@ -1,0 +1,40 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Todo {
+  id: ID!
+  text: String!
+  done: Boolean!
+}
+
+
+input TodosFilterInput {
+  IDEq: ID,
+  IDNeq: ID,
+  IDIn: [ID!],
+  IDNin: [ID!],
+  IDLt: ID,
+  IDLte: ID,
+  IDGt: ID,
+  IDGte: ID,
+  AND: [TodosFilterInput!],
+  OR: [TodosFilterInput!],
+  NOT: [TodosFilterInput!]
+}
+
+
+type Query {
+  todos(input:TodosFilterInput): [Todo!]!
+}
+
+input NewTodo {
+  text: String!
+  userId: String!
+}
+
+type Mutation {
+  createTodo(input: NewTodo!): Todo!
+}
+
+scalar UUID

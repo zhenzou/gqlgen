@@ -76,7 +76,7 @@ func (m *Plugin) generateSingleFile(data *codegen.Data) error {
 		}
 
 		for _, f := range o.Fields {
-			if !f.IsResolver {
+			if !f.IsResolver || f.Converter != nil {
 				continue
 			}
 
@@ -155,7 +155,7 @@ func (m *Plugin) generatePerSchema(data *codegen.Data) error {
 			files[fn].Objects = append(files[fn].Objects, o)
 		}
 		for _, f := range o.Fields {
-			if !f.IsResolver {
+			if !f.IsResolver || f.Converter != nil {
 				continue
 			}
 			structName := templates.LcFirst(o.Name) + templates.UcFirst(data.Config.Resolver.Type)

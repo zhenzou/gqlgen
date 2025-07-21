@@ -210,6 +210,7 @@ func Funcs() template.FuncMap {
 		"obj":                obj,
 		"ts":                 TypeIdentifier,
 		"call":               Call,
+		"callConverter":      callConverter,
 		"dict":               dict,
 		"prefixLines":        prefixLines,
 		"notNil":             notNil,
@@ -227,6 +228,15 @@ func Funcs() template.FuncMap {
 			return render(resolveName(filename, 0), tpldata)
 		},
 	}
+}
+
+func callConverter(converter string) string {
+	parts := strings.Split(converter, ".")
+	pkg := CurrentImports.Lookup(strings.Join(parts[:len(parts)-1], "."))
+	if pkg != "" {
+		pkg += "."
+	}
+	return pkg + parts[len(parts)-1]
 }
 
 func UcFirst(s string) string {

@@ -35,6 +35,8 @@ type Field struct {
 	Default          any              // The default value
 	Stream           bool             // does this field return a channel?
 	Directives       []*Directive
+	// The converter function to use, the converter will be use if this field IsResolver
+	Converter *string
 }
 
 func (b *builder) buildField(obj *Object, field *ast.FieldDefinition) (*Field, error) {
@@ -74,6 +76,41 @@ func (b *builder) buildField(obj *Object, field *ast.FieldDefinition) (*Field, e
 			return nil, err
 		}
 		log.Println(err.Error())
+	}
+
+	if f.IsResolver {
+		target, err := b.findBindTarget(obj.Type, f.GoFieldName)
+		if err != nil {
+			return nil, err
+		}
+		// Converter resolution logic
+		if f.Object.IsInputType() {
+			// 1. Check for field-level converter
+			if converter := b.Config.Models[f.Object.Name].Fields[f.Name].Converter; converter != "" {
+				if converter == "-" {
+					f.Converter = nil
+				} else {
+					f.Converter = &converter
+				}
+			} else {
+				// 2. Check for struct-level converter
+				for _, converter := range b.Config.Models[f.Object.Name].Converters {
+					if f.TypeReference.GO != nil && f.TypeReference.Target != nil && converter.From == f.TypeReference.GO.String() && converter.To == target.Type().String() {
+						f.Converter = &converter.With
+						break
+					}
+				}
+				// 3. Check for global-level converter
+				if f.Converter == nil {
+					for _, converter := range b.Config.Converters {
+						if f.TypeReference.GO != nil && f.TypeReference.Target != nil && converter.From == f.TypeReference.GO.String() && converter.To == target.Type().String() {
+							f.Converter = &converter.With
+							break
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if f.IsResolver && b.Config.ResolversAlwaysReturnPointers && !f.TypeReference.IsPtr() && f.TypeReference.IsStruct() {

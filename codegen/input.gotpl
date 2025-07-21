@@ -55,9 +55,17 @@
 					}
 					if data, ok := tmp.({{ $field.TypeReference.GO | ref }}) ; ok {
 						{{- if $field.IsResolver }}
-							if err = ec.resolvers.{{ $field.ShortInvocation }}; err != nil {
-								return {{$it}}, err
-							}
+							{{- if $field.Converter }}
+								converted, err := {{ callConverter $field.Converter }}(data)
+								if err != nil {
+									return {{$it}}, graphql.ErrorOnPath(ctx, err)
+								}
+								{{ $lhs }} = converted
+							{{- else }}
+								if err = ec.resolvers.{{ $field.ShortInvocation }}; err != nil {
+									return {{$it}}, err
+								}
+							{{- end}}
 						{{- else }}
 							{{- if $field.TypeReference.IsOmittable }}
 								{{ $lhs }} = graphql.OmittableOf(data)
@@ -81,17 +89,33 @@
 					}
 				{{- else }}
 					{{- if $field.IsResolver }}
-						{{ if $useFunctionSyntaxForExecutionContext -}}
-						data, err := {{ $field.TypeReference.UnmarshalFunc }}(ctx, ec, v)
-						{{- else -}}
-						data, err := ec.{{ $field.TypeReference.UnmarshalFunc }}(ctx, v)
-						{{- end }}
-						if err != nil {
-							return {{$it}}, err
-						}
-						if err = ec.resolvers.{{ $field.ShortInvocation }}; err != nil {
-							return {{$it}}, err
-						}
+						{{- if $field.Converter }}
+							{{ if $useFunctionSyntaxForExecutionContext -}}
+							data, err := {{ $field.TypeReference.UnmarshalFunc }}(ctx, ec, v)
+							{{- else -}}
+							data, err := ec.{{ $field.TypeReference.UnmarshalFunc }}(ctx, v)
+							{{- end }}
+							if err != nil {
+								return {{$it}}, err
+							}
+							converted, err := {{ callConverter $field.Converter }}(data)
+							if err != nil {
+								return {{$it}}, graphql.ErrorOnPath(ctx, err)
+							}
+							{{ $lhs }} = converted
+						{{- else }}
+							{{ if $useFunctionSyntaxForExecutionContext -}}
+							data, err := {{ $field.TypeReference.UnmarshalFunc }}(ctx, ec, v)
+							{{- else -}}
+							data, err := ec.{{ $field.TypeReference.UnmarshalFunc }}(ctx, v)
+							{{- end }}
+							if err != nil {
+								return {{$it}}, err
+							}
+							if err = ec.resolvers.{{ $field.ShortInvocation }}; err != nil {
+								return {{$it}}, err
+							}
+						{{- end}}	
 					{{- else }}
 						{{ if $useFunctionSyntaxForExecutionContext -}}
 						data, err := {{ $field.TypeReference.UnmarshalFunc }}(ctx, ec, v)
@@ -116,3 +140,4 @@
 	}
 	{{- end }}
 {{ end }}
+

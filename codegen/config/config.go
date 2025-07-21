@@ -31,6 +31,8 @@ type Config struct {
 	Models                               TypeMap                    `yaml:"models,omitempty"`
 	StructTag                            string                     `yaml:"struct_tag,omitempty"`
 	Directives                           map[string]DirectiveConfig `yaml:"directives,omitempty"`
+	// global-level converters
+	Converters                           []ConverterConfig          `yaml:"converters,omitempty"`
 	LocalPrefix                          string                     `yaml:"local_prefix,omitempty"`
 	GoBuildTags                          StringList                 `yaml:"go_build_tags,omitempty"`
 	GoInitialisms                        GoInitialismsConfig        `yaml:"go_initialisms,omitempty"`
@@ -64,6 +66,12 @@ type Config struct {
 
 	// Deprecated: use Federation instead. Will be removed next release
 	Federated bool `yaml:"federated,omitempty"`
+}
+
+type ConverterConfig struct {
+	From string `yaml:"from"`
+	To   string `yaml:"to"`
+	With string `yaml:"with"`
 }
 
 var cfgFilenames = []string{".gqlgen.yml", "gqlgen.yml", "gqlgen.yaml"}
@@ -470,6 +478,8 @@ type TypeMapEntry struct {
 	ForceGenerate bool                    `yaml:"forceGenerate,omitempty"`
 	Fields        map[string]TypeMapField `yaml:"fields,omitempty"`
 	EnumValues    map[string]EnumValue    `yaml:"enum_values,omitempty"`
+	// struct-level converters
+	Converters []ConverterConfig `yaml:"converters,omitempty"`
 
 	// Key is the Go name of the field.
 	ExtraFields      map[string]ModelExtraField `yaml:"extraFields,omitempty"`
@@ -499,6 +509,8 @@ type TypeMapField struct {
 	FieldName       string `yaml:"fieldName"`
 	Omittable       *bool  `yaml:"omittable"`
 	GeneratedMethod string `yaml:"-"`
+	// field-level converter
+	Converter string `yaml:"converter,omitempty"`
 }
 
 type EnumValue struct {
